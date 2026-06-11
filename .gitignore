@@ -1,0 +1,12 @@
+# 不要把虛擬環境上傳
+venv/
+
+# 不要把敏感設定上傳
+.env
+
+# 不要把 SQLite 資料庫上傳
+database.db
+
+# Python 快取
+__pycache__/
+*.pyc
