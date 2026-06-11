@@ -10,3 +10,5 @@ database.db
 # Python 快取
 __pycache__/
 *.pyc
+
+.DS_Store
