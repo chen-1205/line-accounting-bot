@@ -289,7 +289,7 @@ def handle_message(event):
         reply_text = build_today_report()
 
     # 4. 本月完整報表
-    elif user_text in ["本月報表", "本月收支"]:
+    elif user_text in ["本月收支"]:
         reply_text = build_month_report()
 
     # 5. 本月支出報表
