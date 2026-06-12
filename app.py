@@ -25,8 +25,6 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 # 匯入支出服務
 from services.accounting import (
     add_expense,
-    get_today_total,
-    get_category_summary,
     get_all_expenses,
     get_expense_by_id,
     update_expense,
@@ -36,8 +34,6 @@ from services.accounting import (
 # 匯入收入服務
 from services.income import (
     add_income,
-    get_today_income_total,
-    get_income_category_summary,
     get_all_incomes,
     get_income_by_id,
     update_income,
@@ -47,8 +43,6 @@ from services.income import (
 # 匯入報表服務
 from services.report import (
     build_today_report,
-    build_expense_summary_report,
-    build_income_summary_report,
     build_month_report,
     build_month_expense_report,
     build_month_income_report,
