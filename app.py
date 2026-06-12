@@ -285,7 +285,7 @@ def handle_message(event):
     reply_text = ""
 
     # 1. 今日收支報表
-    if user_text == "今天":
+    if user_text == "今天收支":
         reply_text = build_today_report()
 
     # 4. 本月完整報表
