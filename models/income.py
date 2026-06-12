@@ -1,248 +1,38 @@
-# 匯入日期與時間工具
-from datetime import date, datetime, time
+# 匯入 SQLAlchemy 欄位型別
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import DateTime
 
-# 匯入 SQLAlchemy 的聚合函式
-from sqlalchemy import func
+# 匯入 declarative_base，用來建立 ORM Model 的基底類別
+from sqlalchemy.orm import declarative_base
 
-# 匯入 Income Model 與資料庫 Session
-from models.income import Income
-from models.database import Session
+# 匯入 datetime，讓 created_at 可以自動記錄建立時間
+from datetime import datetime
 
+# 建立 Income Model 專用的 Base
+Base = declarative_base()
 
-# 新增一筆收入資料
-def add_income(category, amount, note=""):
-    # 建立資料庫連線 session
-    session = Session()
 
-    try:
-        # 建立 Income 物件
-        income = Income(
-            category=category,
-            amount=amount,
-            note=note
-        )
+# 這個類別代表收入資料表
+class Income(Base):
+    # 資料表名稱
+    __tablename__ = "incomes"
 
-        # 寫入資料庫
-        session.add(income)
-        session.commit()
+    # 主鍵 id
+    id = Column(Integer, primary_key=True)
 
-        # 重新讀取這筆資料
-        session.refresh(income)
+    # 收入類別，例如：薪水、獎金、退款
+    category = Column(String)
 
-        return income
+    # 收入金額
+    amount = Column(Integer)
 
-    except Exception as e:
-        # 發生錯誤時回滾交易
-        session.rollback()
-        print(f"新增收入失敗: {e}")
-        return None
+    # 備註，例如：五月薪水、客戶退款
+    note = Column(String)
 
-    finally:
-        # 關閉資料庫連線
-        session.close()
-
-
-# 取得所有收入資料
-def get_all_incomes():
-    session = Session()
-
-    try:
-        # 依照建立時間由舊到新排序
-        incomes = session.query(Income).order_by(Income.created_at.asc()).all()
-        return incomes
-
-    except Exception as e:
-        print(f"查詢全部收入失敗: {e}")
-        return []
-
-    finally:
-        session.close()
-
-
-# 取得今天的所有收入資料
-def get_today_incomes():
-    session = Session()
-
-    # 今天的開始與結束時間
-    today_start = datetime.combine(date.today(), time.min)
-    today_end = datetime.combine(date.today(), time.max)
-
-    try:
-        # 篩選今天建立的收入
-        incomes = session.query(Income).filter(
-            Income.created_at >= today_start,
-            Income.created_at <= today_end
-        ).order_by(Income.created_at.asc()).all()
-
-        return incomes
-
-    except Exception as e:
-        print(f"查詢今日收入失敗: {e}")
-        return []
-
-    finally:
-        session.close()
-
-
-# 取得今天總收入
-def get_today_income_total():
-    session = Session()
-
-    # 今天的開始與結束時間
-    today_start = datetime.combine(date.today(), time.min)
-    today_end = datetime.combine(date.today(), time.max)
-
-    try:
-        # 加總今天收入
-        total = session.query(func.sum(Income.amount)).filter(
-            Income.created_at >= today_start,
-            Income.created_at <= today_end
-        ).scalar()
-
-        return total or 0
-
-    except Exception as e:
-        print(f"查詢今日總收入失敗: {e}")
-        return 0
-
-    finally:
-        session.close()
-
-
-# 取得所有收入的類別統計
-def get_income_category_summary():
-    session = Session()
-
-    try:
-        # 依類別分組並加總
-        results = session.query(
-            Income.category,
-            func.sum(Income.amount)
-        ).group_by(Income.category).all()
-
-        # 轉成字典
-        summary = {}
-        for category, total in results:
-            summary[category] = total
-
-        return summary
-
-    except Exception as e:
-        print(f"查詢收入類別統計失敗: {e}")
-        return {}
-
-    finally:
-        session.close()
-
-
-# 取得本月所有收入資料
-def get_month_incomes(year=None, month=None):
-    session = Session()
-
-    # 如果沒有指定年月，就使用現在的年月
-    now = datetime.now()
-    year = year or now.year
-    month = month or now.month
-
-    # 本月第一天
-    month_start = datetime(year, month, 1)
-
-    # 下個月第一天
-    if month == 12:
-        next_month_start = datetime(year + 1, 1, 1)
-    else:
-        next_month_start = datetime(year, month + 1, 1)
-
-    try:
-        # 篩選本月收入
-        incomes = session.query(Income).filter(
-            Income.created_at >= month_start,
-            Income.created_at < next_month_start
-        ).order_by(Income.created_at.asc()).all()
-
-        return incomes
-
-    except Exception as e:
-        print(f"查詢本月收入失敗: {e}")
-        return []
-
-    finally:
-        session.close()
-
-
-# 取得本月總收入
-def get_month_income_total(year=None, month=None):
-    session = Session()
-
-    # 如果沒有指定年月，就使用現在的年月
-    now = datetime.now()
-    year = year or now.year
-    month = month or now.month
-
-    # 本月第一天
-    month_start = datetime(year, month, 1)
-
-    # 下個月第一天
-    if month == 12:
-        next_month_start = datetime(year + 1, 1, 1)
-    else:
-        next_month_start = datetime(year, month + 1, 1)
-
-    try:
-        # 加總本月收入
-        total = session.query(func.sum(Income.amount)).filter(
-            Income.created_at >= month_start,
-            Income.created_at < next_month_start
-        ).scalar()
-
-        return total or 0
-
-    except Exception as e:
-        print(f"查詢本月總收入失敗: {e}")
-        return 0
-
-    finally:
-        session.close()
-
-
-# 取得本月收入的類別統計
-def get_month_income_category_summary(year=None, month=None):
-    session = Session()
-
-    # 如果沒有指定年月，就使用現在的年月
-    now = datetime.now()
-    year = year or now.year
-    month = month or now.month
-
-    # 本月第一天
-    month_start = datetime(year, month, 1)
-
-    # 下個月第一天
-    if month == 12:
-        next_month_start = datetime(year + 1, 1, 1)
-    else:
-        next_month_start = datetime(year, month + 1, 1)
-
-    try:
-        # 依類別分組並加總本月收入
-        results = session.query(
-            Income.category,
-            func.sum(Income.amount)
-        ).filter(
-            Income.created_at >= month_start,
-            Income.created_at < next_month_start
-        ).group_by(Income.category).all()
-
-        # 轉成字典
-        summary = {}
-        for category, total in results:
-            summary[category] = total
-
-        return summary
-
-    except Exception as e:
-        print(f"查詢本月收入類別統計失敗: {e}")
-        return {}
-
-    finally:
-        session.close()
+    # 建立時間，預設使用目前時間
+    created_at = Column(
+        DateTime,
+        default=datetime.now
+    )
