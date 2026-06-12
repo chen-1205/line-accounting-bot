@@ -27,6 +27,7 @@ from services.accounting import (
     add_expense,
     get_today_total,
     get_category_summary,
+    get_all_expenses,
 )
 
 # 匯入收入服務
@@ -34,6 +35,7 @@ from services.income import (
     add_income,
     get_today_income_total,
     get_income_category_summary,
+    get_all_incomes,
 )
 
 # 匯入報表服務
@@ -120,6 +122,88 @@ def parse_income_text(text):
         "amount": amount,
         "note": note
     }
+
+
+# 這個函式用來把資料建立時間格式化成易讀文字
+def format_datetime_text(dt):
+    # 如果時間不存在，回傳預設文字
+    if dt is None:
+        return "無"
+
+    # 轉成 年-月-日 時:分 的格式
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+
+# 這個函式用來建立最近支出清單
+# 會把每筆資料的 id 一起列出來，方便之後修改或刪除
+def build_recent_expense_list(limit=10):
+    # 取得全部支出資料
+    expenses = get_all_expenses()
+
+    # 如果沒有支出資料，回傳提示
+    if not expenses:
+        return "☁️ 目前還沒有任何支出資料"
+
+    # 只取最後幾筆，並倒序顯示，讓最新資料排前面
+    recent_expenses = expenses[-limit:]
+    recent_expenses.reverse()
+
+    # 建立回覆開頭
+    lines = [
+        f"☁️ 最近 {len(recent_expenses)} 筆支出明細",
+        "以下都有附上 ID，之後修改或刪除時比較不用猜。"
+    ]
+
+    # 逐筆加入明細內容
+    for expense in recent_expenses:
+        lines.append("--------------------")
+        lines.append(f"ID：{expense.id}")
+        lines.append(f"類別：{expense.category}")
+        lines.append(f"金額：{expense.amount} 元")
+        lines.append(f"備註：{expense.note or '無'}")
+        lines.append(f"時間：{format_datetime_text(expense.created_at)}")
+
+    # 補上提示訊息，讓使用者知道之後可以用 ID 處理資料
+    lines.append("--------------------")
+    lines.append("之後可用這些 ID 來做查看、修改或刪除。")
+
+    return "\n".join(lines)
+
+
+# 這個函式用來建立最近收入清單
+# 會把每筆資料的 id 一起列出來，方便之後修改或刪除
+def build_recent_income_list(limit=10):
+    # 取得全部收入資料
+    incomes = get_all_incomes()
+
+    # 如果沒有收入資料，回傳提示
+    if not incomes:
+        return "☁️ 目前還沒有任何收入資料"
+
+    # 只取最後幾筆，並倒序顯示，讓最新資料排前面
+    recent_incomes = incomes[-limit:]
+    recent_incomes.reverse()
+
+    # 建立回覆開頭
+    lines = [
+        f"☁️ 最近 {len(recent_incomes)} 筆收入明細",
+        "以下都有附上 ID，之後修改或刪除時比較不用猜。"
+    ]
+
+    # 逐筆加入明細內容
+    for income in recent_incomes:
+        lines.append("--------------------")
+        lines.append(f"ID：{income.id}")
+        lines.append(f"類別：{income.category}")
+        lines.append(f"金額：{income.amount} 元")
+        lines.append(f"備註：{income.note or '無'}")
+        lines.append(f"時間：{format_datetime_text(income.created_at)}")
+
+    # 補上提示訊息，讓使用者知道之後可以用 ID 處理資料
+    lines.append("--------------------")
+    lines.append("之後可用這些 ID 來做查看、修改或刪除。")
+
+    return "\n".join(lines)
 
 
 # 這個 API 用來測試 Flask 是否成功啟動
@@ -295,7 +379,15 @@ def handle_message(event):
     elif user_text == "本月收入":
         reply_text = build_month_income_report()
 
-    # 7. 收入記帳
+    # 7. 最近支出明細
+    elif user_text == "最近支出":
+        reply_text = build_recent_expense_list()
+
+    # 8. 最近收入明細
+    elif user_text == "最近收入":
+        reply_text = build_recent_income_list()
+
+    # 9. 收入記帳
     elif user_text.startswith("收入 "):
         # 解析收入格式
         parsed_income = parse_income_text(user_text)
@@ -321,12 +413,13 @@ def handle_message(event):
             else:
                 reply_text = (
                     "☁️ 大耳狗幫你記好收入了！\n"
+                    f"ID：{income.id}\n"
                     f"類別：{income.category}\n"
                     f"金額：{income.amount} 元\n"
                     f"備註：{income.note or '無'}"
                 )
 
-    # 8. 一般支出記帳
+    # 10. 一般支出記帳
     else:
         # 用原本的 parser 解析支出格式
         parsed_expense = parse_expense_text(user_text)
@@ -338,7 +431,8 @@ def handle_message(event):
                 "支出格式：類別 金額 備註\n"
                 "例如：餐飲 150 午餐\n\n"
                 "收入格式：收入 類別 金額 備註\n"
-                "例如：收入 薪水 45000 五月薪水"
+                "例如：收入 薪水 45000 五月薪水\n\n"
+                "查詢最近資料可用：最近支出、最近收入"
             )
         else:
             # 寫入支出資料
@@ -354,6 +448,7 @@ def handle_message(event):
             else:
                 reply_text = (
                     "☁️ 大耳狗幫你記好支出了！\n"
+                    f"ID：{expense.id}\n"
                     f"類別：{expense.category}\n"
                     f"金額：{expense.amount} 元\n"
                     f"備註：{expense.note or '無'}"

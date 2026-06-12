@@ -10,6 +10,9 @@ from models.database import Session
 
 
 # 新增一筆支出資料
+# category：支出類別，例如餐飲、交通
+# amount：支出金額
+# note：備註，可不填
 def add_expense(category, amount, note=""):
     # 建立資料庫連線 session
     session = Session()
@@ -43,11 +46,12 @@ def add_expense(category, amount, note=""):
 
 
 # 取得所有支出資料
+# 會依照建立時間由舊到新排序
+# 之後像最近支出、列表顯示都可以用這個函式
 def get_all_expenses():
     session = Session()
 
     try:
-        # 依照建立時間由舊到新排序
         expenses = session.query(Expense).order_by(Expense.created_at.asc()).all()
         return expenses
 
@@ -59,7 +63,85 @@ def get_all_expenses():
         session.close()
 
 
+# 根據 id 取得單筆支出資料
+# 之後做查看、修改、刪除時會很好用
+def get_expense_by_id(expense_id):
+    session = Session()
+
+    try:
+        expense = session.query(Expense).filter(Expense.id == expense_id).first()
+        return expense
+
+    except Exception as e:
+        print(f"查詢單筆支出失敗: {e}")
+        return None
+
+    finally:
+        session.close()
+
+
+# 修改一筆支出資料
+# 會依照 id 找到資料後更新內容
+# 找不到資料時回傳 None
+def update_expense(expense_id, category, amount, note=""):
+    session = Session()
+
+    try:
+        expense = session.query(Expense).filter(Expense.id == expense_id).first()
+
+        # 如果找不到這筆資料，直接回傳 None
+        if expense is None:
+            return None
+
+        # 更新欄位內容
+        expense.category = category
+        expense.amount = amount
+        expense.note = note
+
+        # 寫回資料庫
+        session.commit()
+        session.refresh(expense)
+
+        return expense
+
+    except Exception as e:
+        session.rollback()
+        print(f"修改支出失敗: {e}")
+        return None
+
+    finally:
+        session.close()
+
+
+# 刪除一筆支出資料
+# 成功刪除回傳 True，找不到資料或失敗回傳 False
+def delete_expense(expense_id):
+    session = Session()
+
+    try:
+        expense = session.query(Expense).filter(Expense.id == expense_id).first()
+
+        # 如果找不到資料，回傳 False
+        if expense is None:
+            return False
+
+        # 刪除資料
+        session.delete(expense)
+        session.commit()
+
+        return True
+
+    except Exception as e:
+        session.rollback()
+        print(f"刪除支出失敗: {e}")
+        return False
+
+    finally:
+        session.close()
+
+
 # 取得今天的所有支出資料
+# 會篩選今天建立的資料
 def get_today_expenses():
     session = Session()
 
@@ -68,7 +150,6 @@ def get_today_expenses():
     today_end = datetime.combine(date.today(), time.max)
 
     try:
-        # 篩選今天建立的資料
         expenses = session.query(Expense).filter(
             Expense.created_at >= today_start,
             Expense.created_at <= today_end
@@ -85,6 +166,7 @@ def get_today_expenses():
 
 
 # 取得今天總支出
+# 會把今天所有支出的 amount 加總起來
 def get_today_total():
     session = Session()
 
@@ -93,7 +175,6 @@ def get_today_total():
     today_end = datetime.combine(date.today(), time.max)
 
     try:
-        # 加總今天的 amount
         total = session.query(func.sum(Expense.amount)).filter(
             Expense.created_at >= today_start,
             Expense.created_at <= today_end
@@ -110,11 +191,11 @@ def get_today_total():
 
 
 # 取得所有支出的類別統計
+# 例如：餐飲 300、交通 120
 def get_category_summary():
     session = Session()
 
     try:
-        # 依照 category 分組並加總
         results = session.query(
             Expense.category,
             func.sum(Expense.amount)
@@ -136,6 +217,7 @@ def get_category_summary():
 
 
 # 取得本月所有支出資料
+# 可指定 year、month；若不指定就使用現在的年月
 def get_month_expenses(year=None, month=None):
     session = Session()
 
@@ -147,14 +229,13 @@ def get_month_expenses(year=None, month=None):
     # 本月第一天
     month_start = datetime(year, month, 1)
 
-    # 下個月第一天，用來當作查詢上界
+    # 下個月第一天，用來當查詢上界
     if month == 12:
         next_month_start = datetime(year + 1, 1, 1)
     else:
         next_month_start = datetime(year, month + 1, 1)
 
     try:
-        # 篩選本月建立的支出資料
         expenses = session.query(Expense).filter(
             Expense.created_at >= month_start,
             Expense.created_at < next_month_start
@@ -171,6 +252,7 @@ def get_month_expenses(year=None, month=None):
 
 
 # 取得本月總支出
+# 用來做本月報表或本月支出查詢
 def get_month_total(year=None, month=None):
     session = Session()
 
@@ -189,7 +271,6 @@ def get_month_total(year=None, month=None):
         next_month_start = datetime(year, month + 1, 1)
 
     try:
-        # 加總本月支出
         total = session.query(func.sum(Expense.amount)).filter(
             Expense.created_at >= month_start,
             Expense.created_at < next_month_start
@@ -206,6 +287,7 @@ def get_month_total(year=None, month=None):
 
 
 # 取得本月支出的類別統計
+# 例如本月餐飲、交通、娛樂各花多少
 def get_month_category_summary(year=None, month=None):
     session = Session()
 
@@ -224,7 +306,6 @@ def get_month_category_summary(year=None, month=None):
         next_month_start = datetime(year, month + 1, 1)
 
     try:
-        # 依類別分組並加總本月支出
         results = session.query(
             Expense.category,
             func.sum(Expense.amount)
@@ -246,3 +327,22 @@ def get_month_category_summary(year=None, month=None):
 
     finally:
         session.close()
+
+
+# 列印全部支出資料
+# 這個函式主要是本機開發時方便除錯
+def print_all_expenses():
+    expenses = get_all_expenses()
+
+    if not expenses:
+        print("目前沒有任何支出資料")
+        return
+
+    for expense in expenses:
+        print(
+            expense.id,
+            expense.category,
+            expense.amount,
+            expense.note,
+            expense.created_at
+        )
