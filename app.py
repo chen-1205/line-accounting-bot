@@ -16,7 +16,7 @@ from linebot.v3.messaging import (
     Configuration,
     MessagingApi,
     ReplyMessageRequest,
-    TextMessage
+    TextMessage,
 )
 
 # 匯入 LINE webhook 事件與文字訊息型別
@@ -26,11 +26,15 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from services.accounting import (
     add_expense,
     get_today_total,
-    get_category_summary
+    get_category_summary,
 )
 
 # 匯入你自己寫好的文字解析器
 from services.parser import parse_expense_text
+
+# 匯入 Expense 的 Base 與資料庫 engine，用來在啟動時自動建立資料表
+from models.expense import Base
+from models.database import engine
 
 # 載入專案根目錄中的 .env 檔案
 load_dotenv()
@@ -51,6 +55,10 @@ configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
 # 建立 WebhookHandler，用來驗證 LINE 傳來的 webhook 簽章
 handler = WebhookHandler(CHANNEL_SECRET)
 
+# 在應用程式啟動時，自動建立 Expense 資料表
+# 這樣即使在 Render 免費方案沒有使用 Shell，也能先完成基本資料表初始化
+Base.metadata.create_all(engine)
+
 # 建立 Flask 應用程式
 app = Flask(__name__)
 
@@ -58,7 +66,7 @@ app = Flask(__name__)
 # 這個 API 用來測試 Flask 是否成功啟動
 @app.route("/")
 def home():
-    return "☁️ 大耳狗記帳小管家啟動中！"
+    return "☁️ 大耳狗記帳小管家啟動中！Render 部署成功！"
 
 
 # 這個 API 用來接收表單格式的記帳資料
@@ -113,7 +121,7 @@ def add_text():
     expense = add_expense(
         parsed["category"],
         parsed["amount"],
-        parsed["note"]
+        parsed["note"],
     )
 
     # 如果新增失敗，回傳伺服器錯誤
@@ -198,7 +206,7 @@ def handle_message(event):
             line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=reply_text)]
+                    messages=[TextMessage(text=reply_text)],
                 )
             )
         return
@@ -220,7 +228,7 @@ def handle_message(event):
             line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=reply_text)]
+                    messages=[TextMessage(text=reply_text)],
                 )
             )
         return
@@ -241,7 +249,7 @@ def handle_message(event):
             line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=reply_text)]
+                    messages=[TextMessage(text=reply_text)],
                 )
             )
         return
@@ -250,7 +258,7 @@ def handle_message(event):
     expense = add_expense(
         parsed["category"],
         parsed["amount"],
-        parsed["note"]
+        parsed["note"],
     )
 
     # 如果資料庫寫入失敗，就回覆錯誤訊息
@@ -271,7 +279,7 @@ def handle_message(event):
         line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=event.reply_token,
-                messages=[TextMessage(text=reply_text)]
+                messages=[TextMessage(text=reply_text)],
             )
         )
 
