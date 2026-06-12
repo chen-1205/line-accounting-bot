@@ -63,7 +63,6 @@ def get_all_incomes():
 
 
 # 根據 id 取得單筆收入資料
-# 之後做查看、修改、刪除時會很好用
 def get_income_by_id(income_id):
     session = Session()
 
@@ -80,8 +79,6 @@ def get_income_by_id(income_id):
 
 
 # 修改一筆收入資料
-# 會依照 id 找到資料後更新內容
-# 找不到資料時回傳 None
 def update_income(income_id, category, amount, note=""):
     session = Session()
 
@@ -140,7 +137,6 @@ def delete_income(income_id):
 
 
 # 取得今天的所有收入資料
-# 會篩選今天建立的資料
 def get_today_incomes():
     session = Session()
 
@@ -165,7 +161,6 @@ def get_today_incomes():
 
 
 # 取得今天總收入
-# 會把今天所有收入的 amount 加總起來
 def get_today_income_total():
     session = Session()
 
@@ -190,7 +185,6 @@ def get_today_income_total():
 
 
 # 取得所有收入的類別統計
-# 例如：薪水 45000、獎金 3000
 def get_income_category_summary():
     session = Session()
 
@@ -216,7 +210,6 @@ def get_income_category_summary():
 
 
 # 取得本月所有收入資料
-# 可指定 year、month；若不指定就使用現在的年月
 def get_month_incomes(year=None, month=None):
     session = Session()
 
@@ -251,7 +244,6 @@ def get_month_incomes(year=None, month=None):
 
 
 # 取得本月總收入
-# 用來做本月報表或本月收入查詢
 def get_month_income_total(year=None, month=None):
     session = Session()
 
@@ -286,7 +278,6 @@ def get_month_income_total(year=None, month=None):
 
 
 # 取得本月收入的類別統計
-# 例如本月薪水、獎金、退款各是多少
 def get_month_income_category_summary(year=None, month=None):
     session = Session()
 

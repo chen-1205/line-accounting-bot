@@ -47,7 +47,6 @@ def add_expense(category, amount, note=""):
 
 # 取得所有支出資料
 # 會依照建立時間由舊到新排序
-# 之後像最近支出、列表顯示都可以用這個函式
 def get_all_expenses():
     session = Session()
 
@@ -64,7 +63,6 @@ def get_all_expenses():
 
 
 # 根據 id 取得單筆支出資料
-# 之後做查看、修改、刪除時會很好用
 def get_expense_by_id(expense_id):
     session = Session()
 
@@ -81,8 +79,6 @@ def get_expense_by_id(expense_id):
 
 
 # 修改一筆支出資料
-# 會依照 id 找到資料後更新內容
-# 找不到資料時回傳 None
 def update_expense(expense_id, category, amount, note=""):
     session = Session()
 
@@ -141,7 +137,6 @@ def delete_expense(expense_id):
 
 
 # 取得今天的所有支出資料
-# 會篩選今天建立的資料
 def get_today_expenses():
     session = Session()
 
@@ -166,7 +161,6 @@ def get_today_expenses():
 
 
 # 取得今天總支出
-# 會把今天所有支出的 amount 加總起來
 def get_today_total():
     session = Session()
 
@@ -191,7 +185,6 @@ def get_today_total():
 
 
 # 取得所有支出的類別統計
-# 例如：餐飲 300、交通 120
 def get_category_summary():
     session = Session()
 
@@ -217,7 +210,6 @@ def get_category_summary():
 
 
 # 取得本月所有支出資料
-# 可指定 year、month；若不指定就使用現在的年月
 def get_month_expenses(year=None, month=None):
     session = Session()
 
@@ -252,7 +244,6 @@ def get_month_expenses(year=None, month=None):
 
 
 # 取得本月總支出
-# 用來做本月報表或本月支出查詢
 def get_month_total(year=None, month=None):
     session = Session()
 
@@ -287,7 +278,6 @@ def get_month_total(year=None, month=None):
 
 
 # 取得本月支出的類別統計
-# 例如本月餐飲、交通、娛樂各花多少
 def get_month_category_summary(year=None, month=None):
     session = Session()
 
