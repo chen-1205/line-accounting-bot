@@ -237,7 +237,6 @@ def build_recent_income_list(limit=10):
     # 建立回覆開頭
     lines = [
         f"☁️ 最近 {len(recent_incomes)} 筆收入明細",
-        "以下都有附上 ID，之後修改或刪除時比較不用猜。"
     ]
 
     # 逐筆加入明細內容
@@ -249,9 +248,6 @@ def build_recent_income_list(limit=10):
         lines.append(f"備註：{income.note or '無'}")
         lines.append(f"時間：{format_datetime_text(income.created_at)}")
 
-    # 補上提示訊息
-    lines.append("--------------------")
-    lines.append("之後可用這些 ID 來做查看、修改或刪除。")
 
     return "\n".join(lines)
 
@@ -259,7 +255,7 @@ def build_recent_income_list(limit=10):
 # 這個 API 用來測試 Flask 是否成功啟動
 @app.route("/")
 def home():
-    return "☁️ 大耳狗記帳小管家啟動中！Render 部署成功！"
+    return "☁️ 大耳狗記帳小管家啟動中！"
 
 
 # 這個 API 是給 LINE 平台呼叫的 webhook 入口
@@ -486,14 +482,9 @@ def handle_message(event):
         if parsed_record is None:
             reply_text = (
                 "☁️ 大耳狗看不懂這筆記帳喔！\n"
-                "現在不用再手動輸入收入或支出。\n"
                 "請直接用這種格式：類別 金額 備註\n\n"
                 "支出範例：餐飲 150 午餐\n"
                 "收入範例：薪水 45000 五月薪水\n\n"
-                "查詢最近資料可用：最近支出、最近收入\n"
-                "查看單筆：查看支出 ID、查看收入 ID\n"
-                "修改資料：修改支出 ID 類別 金額 備註\n"
-                "刪除資料：刪除支出 ID、刪除收入 ID"
             )
         else:
             # 如果判斷為收入，就寫入收入資料
