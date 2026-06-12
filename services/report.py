@@ -1,21 +1,30 @@
 # 匯入目前時間工具
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 匯入支出相關函式
 from services.accounting import (
     get_today_total,
-    get_category_summary,
     get_month_total,
     get_month_category_summary,
+    get_all_expenses,
 )
 
 # 匯入收入相關函式
 from services.income import (
     get_today_income_total,
-    get_income_category_summary,
     get_month_income_total,
     get_month_income_category_summary,
+    get_all_incomes,
 )
+
+# 這個函式用來把資料建立時間格式化成易讀文字
+# 如果有時間就轉成 年-月-日 時:分
+# 如果沒有時間就回傳「無」
+def format_datetime_text(dt):
+    if dt is None:
+        return "無"
+
+    return dt.strftime("%Y-%m-%d %H:%M")
 
 
 # 建立今日收支報表文字
@@ -36,50 +45,6 @@ def build_today_report():
     )
 
     return report_text
-
-
-# 建立全部支出統計報表文字
-def build_expense_summary_report():
-    # 取得所有支出類別統計
-    summary = get_category_summary()
-
-    # 如果沒有資料，直接回傳提示
-    if not summary:
-        return "☁️ 目前還沒有任何支出統計資料"
-
-    # 建立標題
-    lines = ["☁️ 大耳狗支出分類統計"]
-
-    # 依照金額由大到小排序
-    sorted_items = sorted(summary.items(), key=lambda item: item[1], reverse=True)
-
-    # 逐行加入統計內容
-    for category, total in sorted_items:
-        lines.append(f"{category}：{total} 元")
-
-    return "\n".join(lines)
-
-
-# 建立全部收入統計報表文字
-def build_income_summary_report():
-    # 取得所有收入類別統計
-    summary = get_income_category_summary()
-
-    # 如果沒有資料，直接回傳提示
-    if not summary:
-        return "☁️ 目前還沒有任何收入統計資料"
-
-    # 建立標題
-    lines = ["☁️ 大耳狗收入分類統計"]
-
-    # 依照金額由大到小排序
-    sorted_items = sorted(summary.items(), key=lambda item: item[1], reverse=True)
-
-    # 逐行加入統計內容
-    for category, total in sorted_items:
-        lines.append(f"{category}：{total} 元")
-
-    return "\n".join(lines)
 
 
 # 建立本月完整收支報表
@@ -197,5 +162,101 @@ def build_month_income_report():
             lines.append(f"{index}. {category}：{total} 元")
     else:
         lines.append("目前沒有本月收入資料")
+
+    return "\n".join(lines)
+
+
+# 建立近三天支出清單
+# 只顯示建立時間在近三天內的資料，並附上 ID 方便修改或刪除
+def build_recent_expense_list(days=3):
+    # 取得全部支出資料
+    expenses = get_all_expenses()
+
+    # 如果沒有支出資料，回傳提示
+    if not expenses:
+        return "☁️ 目前還沒有任何支出資料"
+
+    # 計算近三天的時間門檻
+    cutoff_time = datetime.now() - timedelta(days=days)
+
+    # 只保留近三天內的支出資料
+    recent_expenses = [
+        expense for expense in expenses
+        if expense.created_at is not None and expense.created_at >= cutoff_time
+    ]
+
+    # 讓最新資料排前面
+    recent_expenses.sort(key=lambda expense: expense.created_at, reverse=True)
+
+    # 如果近三天沒有資料，回傳提示
+    if not recent_expenses:
+        return f"☁️ 近 {days} 天內沒有任何支出資料"
+
+    # 建立回覆開頭
+    lines = [
+        f"☁️ 近 {days} 天支出明細",
+        "以下都有附上 ID，之後修改或刪除時比較不用猜。"
+    ]
+
+    # 逐筆加入明細內容
+    for expense in recent_expenses:
+        lines.append("--------------------")
+        lines.append(f"ID：{expense.id}")
+        lines.append(f"類別：{expense.category}")
+        lines.append(f"金額：{expense.amount} 元")
+        lines.append(f"備註：{expense.note or '無'}")
+        lines.append(f"時間：{format_datetime_text(expense.created_at)}")
+
+    # 補上提示訊息
+    lines.append("--------------------")
+    lines.append("之後可用這些 ID 來做查看、修改或刪除。")
+
+    return "\n".join(lines)
+
+
+# 建立近三天收入清單
+# 只顯示建立時間在近三天內的資料，並附上 ID 方便修改或刪除
+def build_recent_income_list(days=3):
+    # 取得全部收入資料
+    incomes = get_all_incomes()
+
+    # 如果沒有收入資料，回傳提示
+    if not incomes:
+        return "☁️ 目前還沒有任何收入資料"
+
+    # 計算近三天的時間門檻
+    cutoff_time = datetime.now() - timedelta(days=days)
+
+    # 只保留近三天內的收入資料
+    recent_incomes = [
+        income for income in incomes
+        if income.created_at is not None and income.created_at >= cutoff_time
+    ]
+
+    # 讓最新資料排前面
+    recent_incomes.sort(key=lambda income: income.created_at, reverse=True)
+
+    # 如果近三天沒有資料，回傳提示
+    if not recent_incomes:
+        return f"☁️ 近 {days} 天內沒有任何收入資料"
+
+    # 建立回覆開頭
+    lines = [
+        f"☁️ 近 {days} 天收入明細",
+        "以下都有附上 ID，之後修改或刪除時比較不用猜。"
+    ]
+
+    # 逐筆加入明細內容
+    for income in recent_incomes:
+        lines.append("--------------------")
+        lines.append(f"ID：{income.id}")
+        lines.append(f"類別：{income.category}")
+        lines.append(f"金額：{income.amount} 元")
+        lines.append(f"備註：{income.note or '無'}")
+        lines.append(f"時間：{format_datetime_text(income.created_at)}")
+
+    # 補上提示訊息
+    lines.append("--------------------")
+    lines.append("之後可用這些 ID 來做查看、修改或刪除。")
 
     return "\n".join(lines)

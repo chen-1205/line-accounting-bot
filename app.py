@@ -294,14 +294,6 @@ def handle_message(event):
     if user_text == "今天":
         reply_text = build_today_report()
 
-    # 2. 支出統計
-    elif user_text == "統計":
-        reply_text = build_expense_summary_report()
-
-    # 3. 收入統計
-    elif user_text == "收入統計":
-        reply_text = build_income_summary_report()
-
     # 4. 本月完整報表
     elif user_text in ["本月報表", "本月收支"]:
         reply_text = build_month_report()
